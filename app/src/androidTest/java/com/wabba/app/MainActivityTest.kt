@@ -53,7 +53,7 @@ class MainActivityTest {
     @Test fun switchesToSettingsTab() {
         composeRule.onNodeWithText("Configurações").performClick()
         composeRule.onNodeWithText("Provedores de IA").assertIsDisplayed()
-        composeRule.onNodeWithText("Provedor local: Mock").assertIsDisplayed()
+        composeRule.onNodeWithTag("providerBaseUrlInput").assertIsDisplayed()
     }
 
     @Test fun providerSaveButtonStartsDisabled() {

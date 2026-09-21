@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Memory
@@ -109,13 +110,14 @@ private fun ProjectsScreen(projects: List<Project>, onCreateProject: (String) ->
 private fun AIScreen(modifier: Modifier = Modifier) {
     val provider = remember { AIProviderRegistry().get("mock") }
     val messages = remember { mutableStateListOf(ChatMessage(1L, ChatMessage.Role.ASSISTANT, "Olá! Descreva o aplicativo que você quer construir.")) }
+    val chatListState = rememberLazyListState()
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     Column(modifier.fillMaxSize().padding(20.dp)) {
         Text("Wabba IA", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(12.dp))
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.weight(1f).testTag("chatList"), state = chatListState, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(messages, key = { it.id }) { message ->
                 Text(if (message.role == ChatMessage.Role.USER) "Você: ${message.text}" else "Wabba: ${message.text}", style = MaterialTheme.typography.bodyLarge)
             }
@@ -127,11 +129,13 @@ private fun AIScreen(modifier: Modifier = Modifier) {
             if (clean.isEmpty() || busy || provider == null) return@Button
             messages.add(ChatMessage(System.nanoTime(), ChatMessage.Role.USER, clean))
             prompt = ""
+            scope.launch { chatListState.animateScrollToItem(messages.lastIndex) }
             busy = true
             scope.launch {
                 try {
                     val response = provider.generate(AIRequest(clean))
                     messages.add(ChatMessage(System.nanoTime(), ChatMessage.Role.ASSISTANT, response.text))
+                    chatListState.animateScrollToItem(messages.lastIndex)
                 } catch (error: Exception) {
                     messages.add(ChatMessage(System.nanoTime(), ChatMessage.Role.ASSISTANT, "Não foi possível processar: ${error.message ?: "erro desconhecido"}"))
                 } finally { busy = false }

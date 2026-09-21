@@ -8,7 +8,8 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class OpenAICompatibleProviderTest {
-    @Test fun blankKeyFailsBeforeNetworkCall() = runBlocking {
+    @Test
+    fun blankKeyFailsBeforeNetworkCall() {
         assertThrows(IllegalArgumentException::class.java) {
             runBlocking {
                 OpenAICompatibleProvider("", "https://api.example.com/v1")
@@ -17,7 +18,8 @@ class OpenAICompatibleProviderTest {
         }
     }
 
-    @Test fun blankPromptFailsBeforeNetworkCall() = runBlocking {
+    @Test
+    fun blankPromptFailsBeforeNetworkCall() {
         assertThrows(IllegalArgumentException::class.java) {
             runBlocking {
                 OpenAICompatibleProvider("secret", "https://api.example.com/v1")
@@ -26,7 +28,8 @@ class OpenAICompatibleProviderTest {
         }
     }
 
-    @Test fun providerUsesStableId() {
+    @Test
+    fun providerUsesStableId() {
         assertEquals(
             "my-provider",
             OpenAICompatibleProvider("secret", "https://api.example.com/v1", "my-provider").id

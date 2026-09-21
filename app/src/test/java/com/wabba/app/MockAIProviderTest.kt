@@ -1,17 +1,36 @@
 package com.wabba.app
+
 import com.wabba.app.ai.AIRequest
 import com.wabba.app.ai.MockAIProvider
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
 class MockAIProviderTest {
     @Test fun generatesResponseForPrompt() = runBlocking {
-        val result = MockAIProvider().generate(AIRequest("criar app de tarefas"))
+        val result = MockAIProvider().generate(AIRequest("criar app de tarefas", model = "mock-v1"))
         assertTrue(result.text.contains("criar app de tarefas"))
-        assertTrue(result.provider == "mock")
+        assertEquals("mock", result.provider)
+        assertEquals("mock-v1", result.model)
+        assertTrue(result.latencyMs >= 0)
     }
+
     @Test fun handlesBlankPrompt() = runBlocking {
         val result = MockAIProvider().generate(AIRequest("   "))
-        assertTrue(result.text.isNotBlank())
+        assertEquals("Descreva o que você quer construir.", result.text)
+        assertTrue(result.latencyMs >= 0)
+    }
+
+    @Test fun trimsPromptBeforeGenerating() = runBlocking {
+        val result = MockAIProvider().generate(AIRequest("  criar dashboard  "))
+        assertTrue(result.text.contains("criar dashboard"))
+        assertTrue(!result.text.contains("  criar dashboard  "))
+    }
+
+    @Test fun preservesTemperatureAndRequestContract() {
+        val request = AIRequest("ideia", model = null, temperature = 0.7)
+        assertEquals(0.7, request.temperature, 0.0)
+        assertEquals("ideia", request.prompt)
     }
 }

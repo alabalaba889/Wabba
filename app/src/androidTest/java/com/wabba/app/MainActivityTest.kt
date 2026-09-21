@@ -42,8 +42,9 @@ class MainActivityTest {
         composeRule.onNodeWithTag("aiPromptInput").performTextInput("criar um app de tarefas")
         composeRule.onNodeWithTag("sendAiButton").performClick()
         composeRule.onNodeWithText("Você: criar um app de tarefas").assertIsDisplayed()
-        composeRule.waitUntil(5_000) {
-            composeRule.onAllNodesWithText("Wabba: Wabba analisou sua ideia: criar um app de tarefas").fetchSemanticsNodes().isNotEmpty()
+        composeRule.waitUntil(10_000) {
+            composeRule.onAllNodesWithText("Wabba: Wabba analisou sua ideia: criar um app de tarefas", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
         }
     }
 

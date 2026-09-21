@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.wabba.app.ai.AIMessage
 import com.wabba.app.ai.AIProviderFactory
 import com.wabba.app.ai.AIRequest
 import com.wabba.app.ai.ProviderConfig
@@ -174,13 +175,25 @@ private fun AIScreen(modifier: Modifier = Modifier) {
             onClick = {
                 val clean = prompt.trim()
                 if (clean.isEmpty() || busy) return@Button
+                val history = messages.map {
+                    AIMessage(
+                        role = if (it.role == ChatMessage.Role.USER) "user" else "assistant",
+                        content = it.text
+                    )
+                }
                 messages.add(ChatMessage(nextId.incrementAndGet(), ChatMessage.Role.USER, clean))
                 prompt = ""
                 busy = true
                 scope.launch {
                     try {
                         val provider = AIProviderFactory.create(context)
-                        val response = provider.generate(AIRequest(clean, model = SecureProviderStore(context).load()?.model))
+                        val response = provider.generate(
+                            AIRequest(
+                                prompt = clean,
+                                model = SecureProviderStore(context).load()?.model,
+                                history = history
+                            )
+                        )
                         messages.add(ChatMessage(nextId.incrementAndGet(), ChatMessage.Role.ASSISTANT, response.text))
                     } catch (error: Exception) {
                         messages.add(

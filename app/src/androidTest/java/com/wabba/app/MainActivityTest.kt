@@ -3,9 +3,9 @@ package com.wabba.app
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -43,8 +43,10 @@ class MainActivityTest {
         composeRule.onNodeWithTag("sendAiButton").performClick()
         composeRule.onNodeWithText("Você: criar um app de tarefas").assertIsDisplayed()
         composeRule.waitUntil(10_000) {
-            composeRule.onAllNodesWithText("Wabba: Wabba analisou sua ideia: criar um app de tarefas", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithText(
+                "Wabba: Wabba analisou sua ideia: criar um app de tarefas",
+                substring = true
+            ).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
@@ -52,5 +54,22 @@ class MainActivityTest {
         composeRule.onNodeWithText("Configurações").performClick()
         composeRule.onNodeWithText("Provedores de IA").assertIsDisplayed()
         composeRule.onNodeWithText("Provedor local: Mock").assertIsDisplayed()
+    }
+
+    @Test fun providerSaveButtonStartsDisabled() {
+        composeRule.onNodeWithText("Configurações").performClick()
+        composeRule.onNodeWithTag("saveProviderButton").assertIsNotEnabled()
+    }
+
+    @Test fun providerFormAcceptsModelAndKeyInput() {
+        composeRule.onNodeWithText("Configurações").performClick()
+        composeRule.onNodeWithTag("providerModelInput").performTextInput("test-model")
+        composeRule.onNodeWithTag("providerApiKeyInput").performTextInput("not-a-real-key")
+        composeRule.onNodeWithTag("saveProviderButton").assertIsDisplayed()
+    }
+
+    @Test fun clearProviderActionIsAvailable() {
+        composeRule.onNodeWithText("Configurações").performClick()
+        composeRule.onNodeWithTag("clearProviderButton").assertIsDisplayed()
     }
 }

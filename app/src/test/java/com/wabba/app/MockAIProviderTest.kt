@@ -16,6 +16,17 @@ class MockAIProviderTest {
         assertTrue(result.latencyMs >= 0)
     }
 
+    @Test fun respondsNaturallyToGreeting() = runBlocking {
+        val result = MockAIProvider().generate(AIRequest("oi"))
+        assertTrue(result.text.startsWith("Oi!"))
+        assertTrue(!result.text.contains("Wabba analisou sua ideia"))
+    }
+
+    @Test fun separatesConversationFromBuildIntent() = runBlocking {
+        val result = MockAIProvider().generate(AIRequest("qual é a função da wabba?"))
+        assertTrue(result.text.contains("não necessariamente uma ordem para criar um projeto"))
+    }
+
     @Test fun handlesBlankPrompt() = runBlocking {
         val result = MockAIProvider().generate(AIRequest("   "))
         assertEquals("Descreva o que você quer construir.", result.text)

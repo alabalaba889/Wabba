@@ -2,8 +2,11 @@
 .gradle/
 build/
 
-# Local configuration file (sdk path, etc)
+# Local configuration and secrets
 local.properties
+.env
+.env.*
+!.env.example
 
 # Log/OS Files
 *.log
@@ -12,23 +15,21 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
-*.aab
-*.apk
-output-metadata.json
-
-# IntelliJ
 *.iml
 .idea/
 misc.xml
 deploymentTargetDropDown.xml
 render.experimental.xml
 
+# Android packages and profiling
+*.aab
+*.apk
+output-metadata.json
+*.hprof
+
 # Keystore files
 *.jks
 *.keystore
 
-# Google Services (e.g. APIs or Firebase)
+# Google Services
 google-services.json
-
-# Android Profiling
-*.hprof

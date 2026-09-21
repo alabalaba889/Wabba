@@ -1,9 +1,11 @@
 package com.wabba.app
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -30,8 +32,7 @@ class MainActivityTest {
 
     @Test fun createButtonDisabledForBlankName() {
         composeRule.onNodeWithTag("createProjectButton").assertIsDisplayed()
-        // The initial state is blank, so the button is disabled and clicking it must not create a project.
-        composeRule.onNodeWithTag("createProjectButton").performClick()
+        composeRule.onNodeWithTag("createProjectButton").assertIsNotEnabled()
         composeRule.onNodeWithText("Meu primeiro projeto").assertIsDisplayed()
     }
 

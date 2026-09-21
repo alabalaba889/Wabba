@@ -2,6 +2,7 @@ package com.wabba.app.ai
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -29,17 +30,39 @@ class OpenAICompatibleProvider(
         }
 
         try {
+            val messages = JSONArray()
+                .put(
+                    JSONObject()
+                        .put("role", "system")
+                        .put(
+                            "content",
+                            "Você é a Wabba Manager, uma IA de engenharia de software. " +
+                                "Converse naturalmente. Só trate uma mensagem como pedido de desenvolvimento quando houver intenção clara de criar, alterar, testar ou corrigir um projeto. " +
+                                "Quando houver intenção de desenvolvimento, organize o trabalho em análise, requisitos, arquitetura, tarefas, implementação, testes, correções e build. " +
+                                "Não diga que executou código, testes ou builds se isso não aconteceu."
+                        )
+                )
+
+            request.history.takeLast(20).forEach { message ->
+                if (message.role == "user" || message.role == "assistant") {
+                    messages.put(
+                        JSONObject()
+                            .put("role", message.role)
+                            .put("content", message.content)
+                    )
+                }
+            }
+
+            messages.put(
+                JSONObject()
+                    .put("role", "user")
+                    .put("content", request.prompt.trim())
+            )
+
             val body = JSONObject()
                 .put("model", request.model ?: "")
                 .put("temperature", request.temperature)
-                .put(
-                    "messages",
-                    org.json.JSONArray().put(
-                        JSONObject()
-                            .put("role", "user")
-                            .put("content", request.prompt.trim())
-                    )
-                )
+                .put("messages", messages)
                 .toString()
 
             connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }

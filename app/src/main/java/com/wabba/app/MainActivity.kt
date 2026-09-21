@@ -1,1 +1,157 @@
-package com.wabba.app\n\nimport android.os.Bundle\nimport androidx.activity.ComponentActivity\nimport androidx.activity.compose.setContent\nimport androidx.compose.foundation.layout.Arrangement\nimport androidx.compose.foundation.layout.Column\nimport androidx.compose.foundation.layout.Row\nimport androidx.compose.foundation.layout.Spacer\nimport androidx.compose.foundation.layout.fillMaxSize\nimport androidx.compose.foundation.layout.fillMaxWidth\nimport androidx.compose.foundation.layout.height\nimport androidx.compose.foundation.layout.padding\nimport androidx.compose.foundation.layout.weight\nimport androidx.compose.foundation.lazy.LazyColumn\nimport androidx.compose.foundation.lazy.items\nimport androidx.compose.material.icons.Icons\nimport androidx.compose.material.icons.filled.Folder\nimport androidx.compose.material.icons.filled.Memory\nimport androidx.compose.material.icons.filled.Settings\nimport androidx.compose.material3.Button\nimport androidx.compose.material3.Icon\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.material3.NavigationBar\nimport androidx.compose.material3.NavigationBarItem\nimport androidx.compose.material3.OutlinedTextField\nimport androidx.compose.material3.Scaffold\nimport androidx.compose.material3.Surface\nimport androidx.compose.material3.Text\nimport androidx.compose.runtime.Composable\nimport androidx.compose.runtime.getValue\nimport androidx.compose.runtime.mutableStateListOf\nimport androidx.compose.runtime.mutableStateOf\nimport androidx.compose.runtime.remember\nimport androidx.compose.runtime.rememberCoroutineScope\nimport androidx.compose.runtime.setValue\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.platform.testTag\nimport androidx.compose.ui.unit.dp\nimport com.wabba.app.ai.AIProviderRegistry\nimport com.wabba.app.ai.AIRequest\nimport com.wabba.app.model.ChatMessage\nimport com.wabba.app.model.Project\nimport kotlinx.coroutines.launch\nimport java.util.UUID\n\nclass MainActivity : ComponentActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContent { WabbaApp() }\n    }\n}\n\n@Composable fun WabbaApp() {\n    MaterialTheme { Surface(Modifier.fillMaxSize()) { WabbaRoot() } }\n}\n\n@Composable private fun WabbaRoot() {\n    var selectedTab by remember { mutableStateOf(0) }\n    val projects = remember { mutableStateListOf(Project("demo", "Meu primeiro projeto", "Projeto de demonstração da Wabba.")) }\n    Scaffold(bottomBar = {\n        NavigationBar {\n            NavigationBarItem(selectedTab == 0, { selectedTab = 0 }, { Icon(Icons.Default.Folder, "Projetos") }, label = { Text("Projetos") })\n            NavigationBarItem(selectedTab == 1, { selectedTab = 1 }, { Icon(Icons.Default.Memory, "IA") }, label = { Text("IA") })\n            NavigationBarItem(selectedTab == 2, { selectedTab = 2 }, { Icon(Icons.Default.Settings, "Configurações") }, label = { Text("Configurações") })\n        }\n    }) { padding ->\n        when (selectedTab) {\n            0 -> ProjectsScreen(projects, { name ->\n                val clean = name.trim()\n                if (clean.isNotEmpty()) projects.add(Project(UUID.randomUUID().toString(), clean, "Projeto criado na Wabba."))\n            }, Modifier.padding(padding))\n            1 -> AIScreen(Modifier.padding(padding))\n            else -> SettingsScreen(Modifier.padding(padding))\n        }\n    }\n}\n\n@Composable private fun ProjectsScreen(projects: List<Project>, onCreateProject: (String) -> Unit, modifier: Modifier = Modifier) {\n    var name by remember { mutableStateOf("") }\n    Column(modifier.fillMaxSize().padding(20.dp)) {\n        Text("Wabba Luks", style = MaterialTheme.typography.headlineMedium)\n        Spacer(Modifier.height(6.dp))\n        Text("Seus projetos", style = MaterialTheme.typography.titleLarge)\n        Spacer(Modifier.height(16.dp))\n        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {\n            OutlinedTextField(name, { name = it }, Modifier.weight(1f).testTag("projectNameInput"), singleLine = true, label = { Text("Nome do projeto") })\n            Button({ onCreateProject(name); name = "" }, enabled = name.trim().isNotEmpty(), modifier = Modifier.testTag("createProjectButton")) { Text("Criar projeto") }\n        }\n        Spacer(Modifier.height(20.dp))\n        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {\n            items(projects, key = { it.id }) { project ->\n                Surface(Modifier.fillMaxWidth(), tonalElevation = 2.dp, shape = MaterialTheme.shapes.medium) {\n                    Column(Modifier.padding(16.dp)) {\n                        Text(project.name, style = MaterialTheme.typography.titleMedium)\n                        Text(project.description)\n                        Text(project.status + " • " + project.progress + "%", style = MaterialTheme.typography.labelMedium)\n                    }\n                }\n            }\n        }\n    }\n}\n\n@Composable private fun AIScreen(modifier: Modifier = Modifier) {\n    val provider = remember { AIProviderRegistry().get("mock") }\n    val messages = remember { mutableStateListOf(ChatMessage(1L, ChatMessage.Role.ASSISTANT, "Olá! Descreva o aplicativo que você quer construir.")) }\n    var prompt by remember { mutableStateOf("") }\n    var busy by remember { mutableStateOf(false) }\n    val scope = rememberCoroutineScope()\n    Column(modifier.fillMaxSize().padding(20.dp)) {\n        Text("Wabba IA", style = MaterialTheme.typography.headlineMedium)\n        Spacer(Modifier.height(12.dp))\n        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {\n            items(messages, key = { it.id }) { message ->\n                Text(if (message.role == ChatMessage.Role.USER) "Você: " + message.text else "Wabba: " + message.text, style = MaterialTheme.typography.bodyLarge)\n            }\n        }\n        OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth().testTag("aiPromptInput"), enabled = !busy, label = { Text("Descreva sua ideia") })\n        Spacer(Modifier.height(8.dp))\n        Button({\n            val clean = prompt.trim()\n            if (clean.isEmpty() || busy || provider == null) return@Button\n            messages.add(ChatMessage(System.currentTimeMillis(), ChatMessage.Role.USER, clean))\n            prompt = ""; busy = true\n            scope.launch {\n                try {\n                    val response = provider.generate(AIRequest(clean))\n                    messages.add(ChatMessage(System.currentTimeMillis(), ChatMessage.Role.ASSISTANT, response.text))\n                } catch (error: Exception) {\n                    messages.add(ChatMessage(System.currentTimeMillis(), ChatMessage.Role.ASSISTANT, "Não foi possível processar: " + (error.message ?: "erro desconhecido")))\n                } finally { busy = false }\n            }\n        }, enabled = prompt.trim().isNotEmpty() && !busy && provider != null, modifier = Modifier.testTag("sendAiButton")) {\n            Text(if (busy) "Processando..." else "Enviar")\n        }\n    }\n}\n\n@Composable private fun SettingsScreen(modifier: Modifier = Modifier) {\n    Column(modifier.fillMaxSize().padding(20.dp)) {\n        Text("Configurações", style = MaterialTheme.typography.headlineMedium)\n        Spacer(Modifier.height(12.dp))\n        Text("Provedores de IA", style = MaterialTheme.typography.titleLarge)\n        Spacer(Modifier.height(6.dp))\n        Text("A Wabba usa uma camada de provedores para permitir integração com diferentes modelos. Chaves reais nunca devem ser colocadas no código, frontend, README ou logs.")\n        Spacer(Modifier.height(12.dp))\n        Text("Provedor local: Mock")\n    }\n}
+package com.wabba.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import com.wabba.app.ai.AIProviderRegistry
+import com.wabba.app.ai.AIRequest
+import com.wabba.app.model.ChatMessage
+import com.wabba.app.model.Project
+import kotlinx.coroutines.launch
+import java.util.UUID
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { WabbaApp() }
+    }
+}
+
+@Composable
+fun WabbaApp() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            WabbaRoot()
+        }
+    }
+}
+
+@Composable
+private fun WabbaRoot() {
+    var selectedTab by remember { mutableStateOf(0) }
+    val projects = remember { mutableStateListOf(Project("demo", "Meu primeiro projeto", "Projeto de demonstração da Wabba.")) }
+    Scaffold(bottomBar = {
+        NavigationBar {
+            NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Default.Folder, "Projetos") }, label = { Text("Projetos") })
+            NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Default.Memory, "IA") }, label = { Text("IA") })
+            NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Icon(Icons.Default.Settings, "Configurações") }, label = { Text("Configurações") })
+        }
+    }) { padding ->
+        when (selectedTab) {
+            0 -> ProjectsScreen(projects, { name -> val clean = name.trim(); if (clean.isNotEmpty()) projects.add(Project(UUID.randomUUID().toString(), clean, "Projeto criado na Wabba.")) }, Modifier.padding(padding))
+            1 -> AIScreen(Modifier.padding(padding))
+            else -> SettingsScreen(Modifier.padding(padding))
+        }
+    }
+}
+
+@Composable
+private fun ProjectsScreen(projects: List<Project>, onCreateProject: (String) -> Unit, modifier: Modifier = Modifier) {
+    var name by remember { mutableStateOf("") }
+    Column(modifier.fillMaxSize().padding(20.dp)) {
+        Text("Wabba Luks", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(6.dp))
+        Text("Seus projetos", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.weight(1f).testTag("projectNameInput"), singleLine = true, label = { Text("Nome do projeto") })
+            Button(onClick = { onCreateProject(name); name = "" }, enabled = name.trim().isNotEmpty(), modifier = Modifier.testTag("createProjectButton")) { Text("Criar projeto") }
+        }
+        Spacer(Modifier.height(20.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(projects, key = { it.id }) { project ->
+                Surface(Modifier.fillMaxWidth(), tonalElevation = 2.dp, shape = MaterialTheme.shapes.medium) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(project.name, style = MaterialTheme.typography.titleMedium)
+                        Text(project.description)
+                        Text("${project.status} • ${project.progress}%", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AIScreen(modifier: Modifier = Modifier) {
+    val provider = remember { AIProviderRegistry().get("mock") }
+    val messages = remember { mutableStateListOf(ChatMessage(1L, ChatMessage.Role.ASSISTANT, "Olá! Descreva o aplicativo que você quer construir.")) }
+    var prompt by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    Column(modifier.fillMaxSize().padding(20.dp)) {
+        Text("Wabba IA", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(12.dp))
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(messages, key = { it.id }) { message ->
+                Text(if (message.role == ChatMessage.Role.USER) "Você: ${message.text}" else "Wabba: ${message.text}", style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+        OutlinedTextField(value = prompt, onValueChange = { prompt = it }, modifier = Modifier.fillMaxWidth().testTag("aiPromptInput"), enabled = !busy, label = { Text("Descreva sua ideia") })
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = {
+            val clean = prompt.trim()
+            if (clean.isEmpty() || busy || provider == null) return@Button
+            messages.add(ChatMessage(System.nanoTime(), ChatMessage.Role.USER, clean))
+            prompt = ""
+            busy = true
+            scope.launch {
+                try {
+                    val response = provider.generate(AIRequest(clean))
+                    messages.add(ChatMessage(System.nanoTime(), ChatMessage.Role.ASSISTANT, response.text))
+                } catch (error: Exception) {
+                    messages.add(ChatMessage(System.nanoTime(), ChatMessage.Role.ASSISTANT, "Não foi possível processar: ${error.message ?: "erro desconhecido"}"))
+                } finally { busy = false }
+            }
+        }, enabled = prompt.trim().isNotEmpty() && !busy && provider != null, modifier = Modifier.testTag("sendAiButton")) {
+            Text(if (busy) "Processando..." else "Enviar")
+        }
+    }
+}
+
+@Composable
+private fun SettingsScreen(modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxSize().padding(20.dp)) {
+        Text("Configurações", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(12.dp))
+        Text("Provedores de IA", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(6.dp))
+        Text("A Wabba usa uma camada de provedores para permitir integração com diferentes modelos. Chaves reais nunca devem ser colocadas no código, frontend, README ou logs.")
+        Spacer(Modifier.height(12.dp))
+        Text("Provedor local: Mock")
+    }
+}

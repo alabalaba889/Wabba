@@ -7,5 +7,8 @@ data class ProviderConfig(
     val apiKey: String
 ) {
     fun isUsable(): Boolean =
-        providerId.isNotBlank() && baseUrl.isNotBlank() && model.isNotBlank() && apiKey.isNotBlank()
+        providerId.isNotBlank() &&
+            baseUrl.startsWith("https://", ignoreCase = true) &&
+            model.isNotBlank() &&
+            apiKey.isNotBlank()
 }

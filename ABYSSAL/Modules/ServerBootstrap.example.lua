@@ -125,7 +125,17 @@ end)
 realityRequest.OnServerEvent:Connect(function(player, payload)
     if not Authorization.IsAdmin(player, config) then feedback:FireClient(player, "Error", "AdminOnly"); return end
     if type(payload) ~= "table" or type(payload.action) ~= "string" then feedback:FireClient(player, "Error", "InvalidRealityRequest"); return end
-    if payload.action == "GravityZone" then
+    if payload.action == "Celestial" then
+        if type(payload.bodyName) ~= "string" or #payload.bodyName > 32 then
+            feedback:FireClient(player, "Error", "InvalidCelestial"); return
+        end
+        local rootPart = Authorization.GetRoot(player)
+        if not rootPart then feedback:FireClient(player, "Error", "NoCharacter"); return end
+        local targetPosition = rootPart.Position + rootPart.CFrame.LookVector * 25
+        local ok, result = celestials:Activate(player, payload.bodyName, targetPosition)
+        if not ok then feedback:FireClient(player, "Error", result); return end
+        feedback:FireClient(player, "Accepted", {action="CelestialRegistered", bodyName=payload.bodyName, id=result.id})
+    elseif payload.action == "GravityZone" then
         local rootPart = Authorization.GetRoot(player)
         if not rootPart then feedback:FireClient(player, "Error", "NoCharacter"); return end
         local center = rootPart.Position + rootPart.CFrame.LookVector * 25

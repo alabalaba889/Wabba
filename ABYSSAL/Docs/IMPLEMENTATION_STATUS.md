@@ -6,6 +6,7 @@
 - [x] Admin authorization helper
 - [x] Combat cooldown / target validation module
 - [x] Server hitbox / damage / knockback helpers
+- [x] Bounded gravity-zone and character-freeze simulation helpers
 - [x] Portal registry and permission-checked traversal helper
 - [x] In-server dimension registry
 - [x] Reversible BasePart property archive
@@ -13,6 +14,9 @@
 - [x] Celestial request registry
 - [x] Component-based Ability Forge validation
 - [x] PC keyboard input bridge
+- [x] Touch-friendly mobile button prototype
+- [x] Ultimate entity state-machine scaffold
+- [x] Procedural dual-sword greybox builder
 - [x] VFX/SFX/animation manifest
 - [x] Celestial effect concept matrix
 

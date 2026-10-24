@@ -13,8 +13,8 @@ Config.Enabled = {
 }
 Config.Cooldowns = {
     BasicCombo = 0.35, DimensionalCut = 2, FrozenFrame = 8,
-    DimensionalBlades = 12, Portal = 5, GravityZone = 15,
-    Celestial = 25, Ultimate = 90,
+    DimensionalBlades = 12, Contextual = 3, Portal = 5, Reality = 8,
+    GravityZone = 15, Celestial = 25, Ultimate = 90,
 }
 Config.Limits = {
     MaxTargetDistance = 180,

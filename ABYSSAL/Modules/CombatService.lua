@@ -26,13 +26,14 @@ function CombatService:ValidateRequest(player, payload)
         return false, "MalformedPayload"
     end
     if not self.Config.Enabled.Combat then return false, "FeatureDisabled" end
-    local ok, reason = self:CanUse(player, payload.ability)
-    if not ok then return false, reason end
+    -- Validate target first so malformed requests cannot burn a legitimate cooldown.
     if payload.target and not self.Authorization.IsValidTarget(
         player, payload.target, self.Config.Limits.MaxTargetDistance
     ) then
         return false, "InvalidTarget"
     end
+    local ok, reason = self:CanUse(player, payload.ability)
+    if not ok then return false, reason end
     return true
 end
 

@@ -33,7 +33,9 @@ local serverRoot = getOrCreate(ServerScriptService, "Folder", "ABYSSAL_Server")
 local serverModules = serverRoot and getOrCreate(serverRoot, "Folder", "Modules")
 local privateAssets = getOrCreate(ServerStorage, "Folder", "ABYSSAL_PrivateAssets")
 local tool = getOrCreate(StarterPack, "Tool", "ABYSSAL")
-local clientRoot = getOrCreate(StarterPlayer.StarterPlayerScripts, "Folder", "ABYSSAL_Client")
+-- Create a LocalScript slot; paste Client/ABYSSAL_Client.client.lua into it manually.
+-- Studio security can prevent scripts from writing Source from the ordinary Command Bar.
+local clientRoot = getOrCreate(StarterPlayer.StarterPlayerScripts, "LocalScript", "ABYSSAL_Client")
 
 if remotes then
     for _, remoteName in ipairs({
@@ -103,4 +105,5 @@ if tool then
 end
 
 print("[ABYSSAL] Foundation hierarchy created. This is a scaffold, not the complete weapon.")
+print("[ABYSSAL] Paste the repository client script into StarterPlayerScripts/ABYSSAL_Client if its Source is empty.")
 print("[ABYSSAL] Review the Output window and inspect every created instance before publishing.")
